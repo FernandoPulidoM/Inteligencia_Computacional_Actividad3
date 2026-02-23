@@ -1,0 +1,13 @@
+{
+  "name": "heart-disease-prediction",
+  "version": "1.0.0",
+  "description": "Heart disease prediction using ONNX model",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "onnxruntime-node": "^1.17.3"
+  }
+}

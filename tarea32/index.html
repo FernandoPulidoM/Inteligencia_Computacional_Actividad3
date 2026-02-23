@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Heart Disease Prediction</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f14; --surface: #13161e; --border: #252a38;
+      --accent: #e84b6e; --text: #e8eaf2; --muted: #6b7394;
+      --safe: #3ecf8e; --warn: #e84b6e; --input-bg: #0d0f14;
+    }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 2rem 1rem;
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,75,110,0.12), transparent),
+        radial-gradient(ellipse 40% 30% at 80% 80%, rgba(62,207,142,0.05), transparent);
+    }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 20px; width: 100%; max-width: 540px; overflow: hidden;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
+      animation: fadeUp 0.5s ease both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card-header {
+      background: linear-gradient(135deg, #1a1e28, #12141c);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 2.5rem; display: flex; align-items: center; gap: 1rem;
+    }
+    .heart-icon {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), #ff6b87);
+      border-radius: 12px; display: flex; align-items: center;
+      justify-content: center; font-size: 22px; flex-shrink: 0;
+      box-shadow: 0 8px 24px rgba(232,75,110,0.35);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { transform: scale(1);    box-shadow: 0 8px 24px rgba(232,75,110,0.35); }
+      50%      { transform: scale(1.06); box-shadow: 0 8px 32px rgba(232,75,110,0.55); }
+    }
+    .card-header h1 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; letter-spacing: -0.02em; }
+    .card-header p  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+    .card-body { padding: 2rem 2.5rem; }
+    .section-label {
+      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--muted); margin: 1.5rem 0 0.75rem;
+    }
+    .section-label:first-child { margin-top: 0; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+    .field  { display: flex; flex-direction: column; gap: 0.35rem; }
+    label   { font-size: 0.75rem; font-weight: 500; color: #9aa0be; }
+    input, select {
+      background: var(--input-bg); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text);
+      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      padding: 0.6rem 0.85rem; width: 100%;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none; -webkit-appearance: none;
+    }
+    input:focus, select:focus {
+      border-color: rgba(232,75,110,0.6);
+      box-shadow: 0 0 0 3px rgba(232,75,110,0.12);
+    }
+    input::placeholder { color: var(--muted); }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7394' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 0.85rem center; padding-right: 2.2rem;
+    }
+    select option { background: #1a1e28; }
+    .btn-predict {
+      width: 100%; margin-top: 1.75rem; padding: 0.85rem;
+      background: linear-gradient(135deg, var(--accent), #c73558);
+      border: none; border-radius: 12px; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+      font-weight: 600; letter-spacing: 0.04em; cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 8px 24px rgba(232,75,110,0.3);
+    }
+    .btn-predict:hover    { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(232,75,110,0.45); }
+    .btn-predict:active   { transform: translateY(0); }
+    .btn-predict:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .result-box {
+      margin-top: 1.25rem; border-radius: 14px; padding: 1.25rem 1.5rem;
+      display: none; animation: fadeUp 0.35s ease both; border: 1px solid;
+    }
+    .result-box.show     { display: flex; align-items: center; gap: 1rem; }
+    .result-box.positive { background: rgba(232,75,110,0.08); border-color: rgba(232,75,110,0.3); }
+    .result-box.negative { background: rgba(62,207,142,0.08);  border-color: rgba(62,207,142,0.3); }
+    .result-icon { font-size: 2rem; flex-shrink: 0; }
+    .result-text strong { display: block; font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
+    .result-box.positive .result-text strong { color: var(--warn); }
+    .result-box.negative .result-text strong { color: var(--safe); }
+    .result-text span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+    .result-prob { margin-left: auto; text-align: right; flex-shrink: 0; }
+    .result-prob .prob-value { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
+    .result-box.positive .prob-value { color: var(--warn); }
+    .result-box.negative .prob-value { color: var(--safe); }
+    .result-prob small { display: block; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+    .error-box {
+      margin-top: 1rem; background: rgba(255,100,50,0.1);
+      border: 1px solid rgba(255,100,50,0.3); border-radius: 10px;
+      padding: 0.75rem 1rem; font-size: 0.82rem; color: #ff9070; display: none;
+    }
+    .disclaimer { margin-top: 1.25rem; font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="card-header">
+      <div class="heart-icon">🫀</div>
+      <div>
+        <h1>Heart Disease Prediction</h1>
+        <p>ML-powered cardiovascular risk assessment</p>
+      </div>
+    </div>
+    <div class="card-body">
+
+      <p class="section-label">Patient Demographics</p>
+      <div class="grid-2">
+        <div class="field">
+          <label for="Age">Age</label>
+          <input type="number" id="Age" placeholder="e.g. 52" min="1" max="120"/>
+        </div>
+        <div class="field">
+          <label for="Sex">Sex</label>
+          <select id="Sex">
+            <option value="M">Male (M)</option>
+            <option value="F">Female (F)</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="section-label">Vitals</p>
+      <div class="grid-2">
+        <div class="field">
+          <label for="RestingBP">Resting BP (mmHg)</label>
+          <input type="number" id="RestingBP" placeholder="e.g. 120"/>
+        </div>
+        <div class="field">
+          <label for="Cholesterol">Cholesterol (mg/dL)</label>
+          <input type="number" id="Cholesterol" placeholder="e.g. 200"/>
+        </div>
+        <div class="field">
+          <label for="MaxHR">Max Heart Rate</label>
+          <input type="number" id="MaxHR" placeholder="e.g. 150"/>
+        </div>
+        <div class="field">
+          <label for="Oldpeak">Oldpeak (ST depression)</label>
+          <input type="number" id="Oldpeak" placeholder="e.g. 1.5" step="0.1"/>
+        </div>
+        <div class="field">
+          <label for="FastingBS">Fasting Blood Sugar</label>
+          <select id="FastingBS">
+            <option value="0">Normal &mdash; &le;120 mg/dL</option>
+            <option value="1">High &mdash; &gt;120 mg/dL</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="section-label">ECG &amp; Symptoms</p>
+      <div class="grid-2">
+        <div class="field">
+          <label for="ChestPainType">Chest Pain Type</label>
+          <select id="ChestPainType">
+            <option value="ATA">ATA – Atypical Angina</option>
+            <option value="NAP">NAP – Non-Anginal</option>
+            <option value="ASY">ASY – Asymptomatic</option>
+            <option value="TA">TA – Typical Angina</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="RestingECG">Resting ECG</label>
+          <select id="RestingECG">
+            <option value="Normal">Normal</option>
+            <option value="ST">ST</option>
+            <option value="LVH">LVH</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ExerciseAngina">Exercise Angina</label>
+          <select id="ExerciseAngina">
+            <option value="N">No (N)</option>
+            <option value="Y">Yes (Y)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="ST_Slope">ST Slope</label>
+          <select id="ST_Slope">
+            <option value="Up">Up</option>
+            <option value="Flat">Flat</option>
+            <option value="Down">Down</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-predict" id="predictBtn" onclick="predict()">Run Prediction</button>
+
+      <div class="result-box" id="resultBox">
+        <div class="result-icon" id="resultIcon"></div>
+        <div class="result-text">
+          <strong id="resultTitle"></strong>
+          <span id="resultDesc"></span>
+        </div>
+        <div class="result-prob" id="probSection" style="display:none">
+          <div class="prob-value" id="probValue"></div>
+          <small>confidence</small>
+        </div>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+      <p class="disclaimer">⚠️ For research &amp; educational purposes only. Not a substitute for professional medical advice.</p>
+    </div>
+  </div>
+
+  <script>
+    async function predict() {
+      const btn       = document.getElementById('predictBtn');
+      const resultBox = document.getElementById('resultBox');
+      const errorBox  = document.getElementById('errorBox');
+
+      errorBox.style.display = 'none';
+      resultBox.classList.remove('show');
+
+      const body = {};
+
+      // Numeric fields
+      for (const f of ['Age','RestingBP','Cholesterol','MaxHR','Oldpeak']) {
+        const val = document.getElementById(f).value.trim();
+        if (!val) { showError('Please fill in ' + f); return; }
+        body[f] = parseFloat(val);
+      }
+
+      // Categorical fields (all encoded to float on the server)
+      for (const f of ['Sex','ChestPainType','FastingBS','RestingECG','ExerciseAngina','ST_Slope']) {
+        body[f] = document.getElementById(f).value;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Analyzing…';
+
+      try {
+        const res  = await fetch('/predict', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Server error');
+
+        const isPositive = data.prediction === 1;
+        resultBox.className = 'result-box show ' + (isPositive ? 'positive' : 'negative');
+        document.getElementById('resultIcon').textContent  = isPositive ? '⚠️' : '✅';
+        document.getElementById('resultTitle').textContent = isPositive
+          ? 'Heart Disease Detected'
+          : 'No Heart Disease Detected';
+        document.getElementById('resultDesc').textContent  = isPositive
+          ? 'The model predicts elevated cardiovascular risk. Please consult a physician.'
+          : 'The model predicts low cardiovascular risk based on the provided data.';
+
+        const probSec = document.getElementById('probSection');
+        if (data.probability !== null && data.probability !== undefined) {
+          document.getElementById('probValue').textContent = Math.round(data.probability * 100) + '%';
+          probSec.style.display = '';
+        } else {
+          probSec.style.display = 'none';
+        }
+      } catch (err) {
+        showError(err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Run Prediction';
+      }
+    }
+
+    function showError(msg) {
+      const eb = document.getElementById('errorBox');
+      eb.textContent = '❌ ' + msg;
+      eb.style.display = 'block';
+    }
+  </script>
+</body>
+</html>

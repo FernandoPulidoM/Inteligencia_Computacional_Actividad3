@@ -3,291 +3,1192 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Heart Disease Prediction</title>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <title>CardioScan — Heart Disease Risk Assessment</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
     :root {
-      --bg: #0d0f14; --surface: #13161e; --border: #252a38;
-      --accent: #e84b6e; --text: #e8eaf2; --muted: #6b7394;
-      --safe: #3ecf8e; --warn: #e84b6e; --input-bg: #0d0f14;
+      --bg:        #060810;
+      --surface:   #0d1020;
+      --surface2:  #131728;
+      --border:    rgba(255,255,255,0.07);
+      --border-hi: rgba(255,255,255,0.14);
+      --accent:    #ff3d6b;
+      --accent2:   #ff8a00;
+      --safe:      #00e5a0;
+      --text:      #f0f2ff;
+      --muted:     #5a6080;
+      --muted2:    #8890b0;
+      --error:     #ff5757;
+      --warn-bg:   rgba(255,61,107,0.08);
+      --safe-bg:   rgba(0,229,160,0.08);
+      --r:         14px;
     }
+
     body {
-      background: var(--bg); color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Instrument Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       padding: 2rem 1rem;
+      overflow-x: hidden;
+    }
+
+    /* animated grid bg */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
       background-image:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(232,75,110,0.12), transparent),
-        radial-gradient(ellipse 40% 30% at 80% 80%, rgba(62,207,142,0.05), transparent);
+        linear-gradient(rgba(255,61,107,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,61,107,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+      z-index: 0;
     }
+    body::after {
+      content: '';
+      position: fixed;
+      top: -30vh; left: 50%;
+      transform: translateX(-50%);
+      width: 80vw; height: 60vh;
+      background: radial-gradient(ellipse, rgba(255,61,107,0.10) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .wrapper {
+      position: relative; z-index: 1;
+      width: 100%; max-width: 600px;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      margin-bottom: 2rem;
+      animation: slideDown 0.6s cubic-bezier(.16,1,.3,1) both;
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+    }
+    .logo-icon {
+      width: 48px; height: 48px;
+      background: linear-gradient(135deg, var(--accent), #c4003a);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px;
+      box-shadow: 0 0 32px rgba(255,61,107,0.4);
+      animation: heartbeat 1.8s ease-in-out infinite;
+    }
+    @keyframes heartbeat {
+      0%,100% { transform: scale(1); }
+      14%     { transform: scale(1.12); }
+      28%     { transform: scale(1); }
+      42%     { transform: scale(1.06); }
+      56%     { transform: scale(1); }
+    }
+    .logo-name {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+    .logo-name span { color: var(--accent); }
+    .header p {
+      font-size: 0.82rem;
+      color: var(--muted2);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* ── STEP PROGRESS ── */
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 1.75rem;
+      animation: slideDown 0.6s 0.1s cubic-bezier(.16,1,.3,1) both;
+    }
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      position: relative;
+      cursor: pointer;
+    }
+    .step-dot {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+    .step.active .step-dot {
+      border-color: var(--accent);
+      background: rgba(255,61,107,0.15);
+      color: var(--accent);
+      box-shadow: 0 0 16px rgba(255,61,107,0.3);
+    }
+    .step.done .step-dot {
+      border-color: var(--safe);
+      background: rgba(0,229,160,0.12);
+      color: var(--safe);
+    }
+    .step-label {
+      font-size: 0.62rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      transition: color 0.3s;
+      white-space: nowrap;
+    }
+    .step.active .step-label { color: var(--accent); }
+    .step.done  .step-label  { color: var(--safe); }
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      max-width: 60px;
+      margin-bottom: 18px;
+      transition: background 0.4s;
+    }
+    .step-line.done { background: var(--safe); }
+
+    /* ── CARD ── */
     .card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 20px; width: 100%; max-width: 540px; overflow: hidden;
-      box-shadow: 0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03);
-      animation: fadeUp 0.5s ease both;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow:
+        0 48px 100px rgba(0,0,0,0.6),
+        0 0 0 1px rgba(255,255,255,0.04);
+      animation: slideUp 0.6s 0.2s cubic-bezier(.16,1,.3,1) both;
     }
-    @keyframes fadeUp {
+
+    /* ── PANELS ── */
+    .panel {
+      display: none;
+      padding: 2rem 2.25rem;
+    }
+    .panel.active { display: block; animation: panelIn 0.4s cubic-bezier(.16,1,.3,1) both; }
+    @keyframes panelIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    .panel-back {
+      animation: panelInBack 0.4s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes panelInBack {
+      from { opacity: 0; transform: translateX(-20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    .panel-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .panel-title .step-num {
+      font-size: 0.65rem;
+      background: rgba(255,61,107,0.15);
+      color: var(--accent);
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .panel-subtitle {
+      font-size: 0.78rem;
+      color: var(--muted2);
+      margin-bottom: 1.5rem;
+    }
+
+    /* ── FIELDS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .grid-1 { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+
+    .field { display: flex; flex-direction: column; gap: 0.4rem; }
+    .field.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--muted2);
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+    label .req { color: var(--accent); font-size: 0.7rem; }
+    label .tip {
+      margin-left: auto;
+      font-size: 0.65rem;
+      text-transform: none;
+      letter-spacing: 0;
+      color: var(--muted);
+      font-weight: 400;
+      font-style: italic;
+    }
+
+    .input-wrap { position: relative; }
+    input, select {
+      width: 100%;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      color: var(--text);
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.92rem;
+      padding: 0.65rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      -webkit-appearance: none;
+    }
+    input:hover, select:hover {
+      border-color: var(--border-hi);
+    }
+    input:focus, select:focus {
+      border-color: rgba(255,61,107,0.5);
+      box-shadow: 0 0 0 3px rgba(255,61,107,0.1);
+      background: rgba(255,61,107,0.03);
+    }
+    input.valid   { border-color: rgba(0,229,160,0.4); }
+    input.invalid { border-color: rgba(255,87,87,0.5); }
+    input.invalid:focus { box-shadow: 0 0 0 3px rgba(255,87,87,0.1); }
+
+    input::placeholder { color: var(--muted); font-size: 0.85rem; }
+    select {
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='7' viewBox='0 0 12 7'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235a6080' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.9rem center;
+      padding-right: 2.4rem;
+    }
+    select option { background: #131728; }
+
+    /* validation icons */
+    .input-wrap .vi {
+      position: absolute; right: 0.8rem; top: 50%; transform: translateY(-50%);
+      font-size: 0.85rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .input-wrap.valid   .vi { opacity: 1; }
+    input.valid  { padding-right: 2.2rem; }
+    input.invalid { padding-right: 2.2rem; }
+
+    /* field error message */
+    .field-error {
+      font-size: 0.68rem;
+      color: var(--error);
+      min-height: 1em;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .field-error.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* range hint bar */
+    .range-bar {
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+    .range-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.3s, background 0.3s;
+      background: var(--accent);
+    }
+
+    /* ── OPTION CARDS (Sex, ExerciseAngina) ── */
+    .option-group {
+      display: flex;
+      gap: 0.6rem;
+    }
+    .option-card {
+      flex: 1;
+      padding: 0.7rem;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s;
+      user-select: none;
+    }
+    .option-card:hover { border-color: var(--border-hi); background: var(--surface2); }
+    .option-card.selected {
+      border-color: var(--accent);
+      background: rgba(255,61,107,0.1);
+      box-shadow: 0 0 12px rgba(255,61,107,0.15);
+    }
+    .option-card .oc-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+    .option-card .oc-label { font-size: 0.72rem; font-weight: 600; color: var(--muted2); }
+    .option-card.selected .oc-label { color: var(--accent); }
+
+    /* ── NAVIGATION BUTTONS ── */
+    .nav-row {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.75rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+    }
+    .btn-back {
+      flex: 0 0 auto;
+      padding: 0.7rem 1.2rem;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      color: var(--muted2);
+      font-family: 'Instrument Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-back:hover { border-color: var(--border-hi); color: var(--text); }
+    .btn-next, .btn-submit {
+      flex: 1;
+      padding: 0.75rem;
+      background: linear-gradient(135deg, var(--accent) 0%, #c4003a 100%);
+      border: none;
+      border-radius: var(--r);
+      color: #fff;
+      font-family: 'Syne', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+      box-shadow: 0 8px 24px rgba(255,61,107,0.3);
+    }
+    .btn-next:hover, .btn-submit:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 32px rgba(255,61,107,0.45);
+    }
+    .btn-next:active, .btn-submit:active { transform: translateY(0); }
+    .btn-next:disabled, .btn-submit:disabled {
+      opacity: 0.4; cursor: not-allowed; transform: none;
+    }
+    .btn-submit { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); }
+
+    /* loading spinner inside button */
+    .spinner {
+      display: inline-block;
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── RESULT PANEL ── */
+    #panel-result {
+      padding: 2.5rem 2.25rem;
+    }
+    .result-hero {
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+    .result-circle {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem;
+      margin: 0 auto 1.25rem;
+      animation: popIn 0.5s cubic-bezier(.16,1,.3,1) both;
+    }
+    .result-circle.positive {
+      background: rgba(255,61,107,0.12);
+      border: 2px solid rgba(255,61,107,0.35);
+      box-shadow: 0 0 48px rgba(255,61,107,0.2);
+    }
+    .result-circle.negative {
+      background: rgba(0,229,160,0.1);
+      border: 2px solid rgba(0,229,160,0.3);
+      box-shadow: 0 0 48px rgba(0,229,160,0.15);
+    }
+    @keyframes popIn {
+      from { transform: scale(0.5); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .result-title {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.4rem;
+    }
+    .result-title.positive { color: var(--accent); }
+    .result-title.negative { color: var(--safe); }
+    .result-desc {
+      font-size: 0.82rem;
+      color: var(--muted2);
+      max-width: 340px;
+      margin: 0 auto 1.5rem;
+      line-height: 1.6;
+    }
+
+    /* confidence meter */
+    .conf-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .conf-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.6rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .conf-value { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 700; }
+    .conf-track {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .conf-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 1s cubic-bezier(.16,1,.3,1);
+      width: 0%;
+    }
+    .conf-fill.positive { background: linear-gradient(90deg, #c4003a, var(--accent)); }
+    .conf-fill.negative { background: linear-gradient(90deg, #00a875, var(--safe)); }
+
+    /* summary grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.6rem;
+      margin-bottom: 1.25rem;
+    }
+    .summary-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.7rem;
+      text-align: center;
+    }
+    .summary-item .si-val {
+      font-family: 'Syne', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+    .summary-item .si-key {
+      font-size: 0.6rem;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .btn-reset {
+      width: 100%;
+      padding: 0.75rem;
+      background: transparent;
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      color: var(--muted2);
+      font-family: 'Syne', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-reset:hover { border-color: var(--border-hi); color: var(--text); }
+
+    .disclaimer {
+      margin-top: 1rem;
+      font-size: 0.66rem;
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 1.5rem; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1c2030;
+      border: 1px solid rgba(255,87,87,0.4);
+      border-radius: 12px;
+      padding: 0.65rem 1.1rem;
+      font-size: 0.8rem;
+      color: #ff9090;
+      display: flex; align-items: center; gap: 0.5rem;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      z-index: 999;
+      transition: transform 0.35s cubic-bezier(.16,1,.3,1), opacity 0.35s;
+      opacity: 0;
+      white-space: nowrap;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
     }
-    .card-header {
-      background: linear-gradient(135deg, #1a1e28, #12141c);
-      border-bottom: 1px solid var(--border);
-      padding: 2rem 2.5rem; display: flex; align-items: center; gap: 1rem;
+
+    @media (max-width: 480px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: repeat(2, 1fr); }
+      .panel { padding: 1.5rem 1.25rem; }
     }
-    .heart-icon {
-      width: 44px; height: 44px;
-      background: linear-gradient(135deg, var(--accent), #ff6b87);
-      border-radius: 12px; display: flex; align-items: center;
-      justify-content: center; font-size: 22px; flex-shrink: 0;
-      box-shadow: 0 8px 24px rgba(232,75,110,0.35);
-      animation: pulse 2.5s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%,100% { transform: scale(1);    box-shadow: 0 8px 24px rgba(232,75,110,0.35); }
-      50%      { transform: scale(1.06); box-shadow: 0 8px 32px rgba(232,75,110,0.55); }
-    }
-    .card-header h1 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; letter-spacing: -0.02em; }
-    .card-header p  { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
-    .card-body { padding: 2rem 2.5rem; }
-    .section-label {
-      font-size: 0.68rem; font-weight: 600; letter-spacing: 0.12em;
-      text-transform: uppercase; color: var(--muted); margin: 1.5rem 0 0.75rem;
-    }
-    .section-label:first-child { margin-top: 0; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-    .field  { display: flex; flex-direction: column; gap: 0.35rem; }
-    label   { font-size: 0.75rem; font-weight: 500; color: #9aa0be; }
-    input, select {
-      background: var(--input-bg); border: 1px solid var(--border);
-      border-radius: 10px; color: var(--text);
-      font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
-      padding: 0.6rem 0.85rem; width: 100%;
-      transition: border-color 0.2s, box-shadow 0.2s;
-      outline: none; -webkit-appearance: none;
-    }
-    input:focus, select:focus {
-      border-color: rgba(232,75,110,0.6);
-      box-shadow: 0 0 0 3px rgba(232,75,110,0.12);
-    }
-    input::placeholder { color: var(--muted); }
-    select {
-      cursor: pointer;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7394' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 0.85rem center; padding-right: 2.2rem;
-    }
-    select option { background: #1a1e28; }
-    .btn-predict {
-      width: 100%; margin-top: 1.75rem; padding: 0.85rem;
-      background: linear-gradient(135deg, var(--accent), #c73558);
-      border: none; border-radius: 12px; color: #fff;
-      font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-      font-weight: 600; letter-spacing: 0.04em; cursor: pointer;
-      transition: transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 8px 24px rgba(232,75,110,0.3);
-    }
-    .btn-predict:hover    { transform: translateY(-1px); box-shadow: 0 12px 32px rgba(232,75,110,0.45); }
-    .btn-predict:active   { transform: translateY(0); }
-    .btn-predict:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-    .result-box {
-      margin-top: 1.25rem; border-radius: 14px; padding: 1.25rem 1.5rem;
-      display: none; animation: fadeUp 0.35s ease both; border: 1px solid;
-    }
-    .result-box.show     { display: flex; align-items: center; gap: 1rem; }
-    .result-box.positive { background: rgba(232,75,110,0.08); border-color: rgba(232,75,110,0.3); }
-    .result-box.negative { background: rgba(62,207,142,0.08);  border-color: rgba(62,207,142,0.3); }
-    .result-icon { font-size: 2rem; flex-shrink: 0; }
-    .result-text strong { display: block; font-size: 1rem; font-weight: 600; margin-bottom: 2px; }
-    .result-box.positive .result-text strong { color: var(--warn); }
-    .result-box.negative .result-text strong { color: var(--safe); }
-    .result-text span { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
-    .result-prob { margin-left: auto; text-align: right; flex-shrink: 0; }
-    .result-prob .prob-value { font-family: 'DM Serif Display', serif; font-size: 1.6rem; }
-    .result-box.positive .prob-value { color: var(--warn); }
-    .result-box.negative .prob-value { color: var(--safe); }
-    .result-prob small { display: block; font-size: 0.68rem; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
-    .error-box {
-      margin-top: 1rem; background: rgba(255,100,50,0.1);
-      border: 1px solid rgba(255,100,50,0.3); border-radius: 10px;
-      padding: 0.75rem 1rem; font-size: 0.82rem; color: #ff9070; display: none;
-    }
-    .disclaimer { margin-top: 1.25rem; font-size: 0.7rem; color: var(--muted); text-align: center; line-height: 1.5; }
   </style>
 </head>
 <body>
+
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🫀</div>
+      <div class="logo-name">Cardio<span>Scan</span></div>
+    </div>
+    <p>Cardiovascular Risk Assessment · ML-Powered</p>
+  </header>
+
+  <!-- STEPS -->
+  <nav class="steps" id="stepsNav">
+    <div class="step active" id="step-ind-0" onclick="goToStep(0)">
+      <div class="step-dot" id="sd-0">1</div>
+      <div class="step-label">Demographics</div>
+    </div>
+    <div class="step-line" id="sl-0"></div>
+    <div class="step active" id="step-ind-1" onclick="goToStep(1)">
+      <div class="step-dot" id="sd-1">2</div>
+      <div class="step-label">Vitals</div>
+    </div>
+    <div class="step-line" id="sl-1"></div>
+    <div class="step" id="step-ind-2" onclick="goToStep(2)">
+      <div class="step-dot" id="sd-2">3</div>
+      <div class="step-label">ECG / Symptoms</div>
+    </div>
+    <div class="step-line" id="sl-2"></div>
+    <div class="step" id="step-ind-3">
+      <div class="step-dot" id="sd-3">✓</div>
+      <div class="step-label">Result</div>
+    </div>
+  </nav>
+
+  <!-- CARD -->
   <div class="card">
-    <div class="card-header">
-      <div class="heart-icon">🫀</div>
-      <div>
-        <h1>Heart Disease Prediction</h1>
-        <p>ML-powered cardiovascular risk assessment</p>
+
+    <!-- PANEL 1: Demographics -->
+    <div class="panel active" id="panel-0">
+      <div class="panel-title">
+        <span class="step-num">Step 1 of 3</span>
+        Patient Demographics
+      </div>
+      <p class="panel-subtitle">Basic patient information for baseline risk assessment.</p>
+
+      <div class="grid-2">
+        <!-- Age -->
+        <div class="field">
+          <label for="Age">Age <span class="req">*</span><span class="tip">18 – 100 yrs</span></label>
+          <div class="input-wrap" id="wrap-Age">
+            <input type="number" id="Age" placeholder="e.g. 52" min="18" max="100"
+                   oninput="validateNum(this,'Age',18,100)" onblur="validateNum(this,'Age',18,100,true)"/>
+            <span class="vi" id="vi-Age"></span>
+          </div>
+          <div class="range-bar"><div class="range-fill" id="rb-Age" style="width:0%"></div></div>
+          <div class="field-error" id="err-Age"></div>
+        </div>
+
+        <!-- Sex -->
+        <div class="field">
+          <label>Biological Sex <span class="req">*</span></label>
+          <div class="option-group">
+            <div class="option-card selected" id="oc-M" onclick="selectOption('Sex','M',this)">
+              <span class="oc-icon">♂️</span>
+              <span class="oc-label">Male</span>
+            </div>
+            <div class="option-card" id="oc-F" onclick="selectOption('Sex','F',this)">
+              <span class="oc-icon">♀️</span>
+              <span class="oc-label">Female</span>
+            </div>
+          </div>
+          <input type="hidden" id="Sex" value="M"/>
+        </div>
+
+        <!-- Chest Pain -->
+        <div class="field full">
+          <label for="ChestPainType">Chest Pain Type <span class="req">*</span></label>
+          <select id="ChestPainType" onchange="markSelectValid(this)">
+            <option value="">— Select chest pain type —</option>
+            <option value="ATA">ATA – Atypical Angina (unusual chest pain)</option>
+            <option value="NAP">NAP – Non-Anginal Pain (not heart-related)</option>
+            <option value="ASY">ASY – Asymptomatic (no chest pain)</option>
+            <option value="TA">TA – Typical Angina (classic angina)</option>
+          </select>
+          <div class="field-error" id="err-ChestPainType"></div>
+        </div>
+      </div>
+
+      <div class="nav-row">
+        <button class="btn-next" onclick="nextStep(0)">Continue → Vitals</button>
       </div>
     </div>
-    <div class="card-body">
 
-      <p class="section-label">Patient Demographics</p>
+    <!-- PANEL 2: Vitals -->
+    <div class="panel" id="panel-1">
+      <div class="panel-title">
+        <span class="step-num">Step 2 of 3</span>
+        Clinical Vitals
+      </div>
+      <p class="panel-subtitle">Enter measured values from the patient's clinical records.</p>
+
       <div class="grid-2">
+        <!-- Resting BP -->
         <div class="field">
-          <label for="Age">Age</label>
-          <input type="number" id="Age" placeholder="e.g. 52" min="1" max="120"/>
+          <label for="RestingBP">Resting BP <span class="req">*</span><span class="tip">mmHg · 80–200</span></label>
+          <div class="input-wrap" id="wrap-RestingBP">
+            <input type="number" id="RestingBP" placeholder="e.g. 120" min="80" max="200"
+                   oninput="validateNum(this,'RestingBP',80,200)" onblur="validateNum(this,'RestingBP',80,200,true)"/>
+            <span class="vi" id="vi-RestingBP"></span>
+          </div>
+          <div class="range-bar"><div class="range-fill" id="rb-RestingBP" style="width:0%"></div></div>
+          <div class="field-error" id="err-RestingBP"></div>
         </div>
+
+        <!-- Cholesterol -->
         <div class="field">
-          <label for="Sex">Sex</label>
-          <select id="Sex">
-            <option value="M">Male (M)</option>
-            <option value="F">Female (F)</option>
+          <label for="Cholesterol">Cholesterol <span class="req">*</span><span class="tip">mg/dL · 100–600</span></label>
+          <div class="input-wrap" id="wrap-Cholesterol">
+            <input type="number" id="Cholesterol" placeholder="e.g. 200" min="100" max="600"
+                   oninput="validateNum(this,'Cholesterol',100,600)" onblur="validateNum(this,'Cholesterol',100,600,true)"/>
+            <span class="vi" id="vi-Cholesterol"></span>
+          </div>
+          <div class="range-bar"><div class="range-fill" id="rb-Cholesterol" style="width:0%"></div></div>
+          <div class="field-error" id="err-Cholesterol"></div>
+        </div>
+
+        <!-- Max HR -->
+        <div class="field">
+          <label for="MaxHR">Max Heart Rate <span class="req">*</span><span class="tip">bpm · 60–220</span></label>
+          <div class="input-wrap" id="wrap-MaxHR">
+            <input type="number" id="MaxHR" placeholder="e.g. 150" min="60" max="220"
+                   oninput="validateNum(this,'MaxHR',60,220)" onblur="validateNum(this,'MaxHR',60,220,true)"/>
+            <span class="vi" id="vi-MaxHR"></span>
+          </div>
+          <div class="range-bar"><div class="range-fill" id="rb-MaxHR" style="width:0%"></div></div>
+          <div class="field-error" id="err-MaxHR"></div>
+        </div>
+
+        <!-- Oldpeak -->
+        <div class="field">
+          <label for="Oldpeak">ST Depression <span class="req">*</span><span class="tip">oldpeak · -3 to 7</span></label>
+          <div class="input-wrap" id="wrap-Oldpeak">
+            <input type="number" id="Oldpeak" placeholder="e.g. 1.5" min="-3" max="7" step="0.1"
+                   oninput="validateNum(this,'Oldpeak',-3,7)" onblur="validateNum(this,'Oldpeak',-3,7,true)"/>
+            <span class="vi" id="vi-Oldpeak"></span>
+          </div>
+          <div class="range-bar"><div class="range-fill" id="rb-Oldpeak" style="width:0%"></div></div>
+          <div class="field-error" id="err-Oldpeak"></div>
+        </div>
+
+        <!-- Fasting BS -->
+        <div class="field full">
+          <label for="FastingBS">Fasting Blood Sugar <span class="req">*</span></label>
+          <select id="FastingBS" onchange="markSelectValid(this)">
+            <option value="">— Select fasting blood sugar level —</option>
+            <option value="0">Normal — ≤ 120 mg/dL</option>
+            <option value="1">Elevated — > 120 mg/dL (possible diabetes indicator)</option>
           </select>
+          <div class="field-error" id="err-FastingBS"></div>
         </div>
       </div>
 
-      <p class="section-label">Vitals</p>
-      <div class="grid-2">
-        <div class="field">
-          <label for="RestingBP">Resting BP (mmHg)</label>
-          <input type="number" id="RestingBP" placeholder="e.g. 120"/>
-        </div>
-        <div class="field">
-          <label for="Cholesterol">Cholesterol (mg/dL)</label>
-          <input type="number" id="Cholesterol" placeholder="e.g. 200"/>
-        </div>
-        <div class="field">
-          <label for="MaxHR">Max Heart Rate</label>
-          <input type="number" id="MaxHR" placeholder="e.g. 150"/>
-        </div>
-        <div class="field">
-          <label for="Oldpeak">Oldpeak (ST depression)</label>
-          <input type="number" id="Oldpeak" placeholder="e.g. 1.5" step="0.1"/>
-        </div>
-        <div class="field">
-          <label for="FastingBS">Fasting Blood Sugar</label>
-          <select id="FastingBS">
-            <option value="0">Normal &mdash; &le;120 mg/dL</option>
-            <option value="1">High &mdash; &gt;120 mg/dL</option>
-          </select>
-        </div>
+      <div class="nav-row">
+        <button class="btn-back" onclick="prevStep(1)">← Back</button>
+        <button class="btn-next" onclick="nextStep(1)">Continue → ECG</button>
       </div>
-
-      <p class="section-label">ECG &amp; Symptoms</p>
-      <div class="grid-2">
-        <div class="field">
-          <label for="ChestPainType">Chest Pain Type</label>
-          <select id="ChestPainType">
-            <option value="ATA">ATA – Atypical Angina</option>
-            <option value="NAP">NAP – Non-Anginal</option>
-            <option value="ASY">ASY – Asymptomatic</option>
-            <option value="TA">TA – Typical Angina</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="RestingECG">Resting ECG</label>
-          <select id="RestingECG">
-            <option value="Normal">Normal</option>
-            <option value="ST">ST</option>
-            <option value="LVH">LVH</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="ExerciseAngina">Exercise Angina</label>
-          <select id="ExerciseAngina">
-            <option value="N">No (N)</option>
-            <option value="Y">Yes (Y)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="ST_Slope">ST Slope</label>
-          <select id="ST_Slope">
-            <option value="Up">Up</option>
-            <option value="Flat">Flat</option>
-            <option value="Down">Down</option>
-          </select>
-        </div>
-      </div>
-
-      <button class="btn-predict" id="predictBtn" onclick="predict()">Run Prediction</button>
-
-      <div class="result-box" id="resultBox">
-        <div class="result-icon" id="resultIcon"></div>
-        <div class="result-text">
-          <strong id="resultTitle"></strong>
-          <span id="resultDesc"></span>
-        </div>
-        <div class="result-prob" id="probSection" style="display:none">
-          <div class="prob-value" id="probValue"></div>
-          <small>confidence</small>
-        </div>
-      </div>
-
-      <div class="error-box" id="errorBox"></div>
-      <p class="disclaimer">⚠️ For research &amp; educational purposes only. Not a substitute for professional medical advice.</p>
     </div>
-  </div>
 
-  <script>
-    async function predict() {
-      const btn       = document.getElementById('predictBtn');
-      const resultBox = document.getElementById('resultBox');
-      const errorBox  = document.getElementById('errorBox');
+    <!-- PANEL 3: ECG & Symptoms -->
+    <div class="panel" id="panel-2">
+      <div class="panel-title">
+        <span class="step-num">Step 3 of 3</span>
+        ECG &amp; Symptoms
+      </div>
+      <p class="panel-subtitle">Electrocardiogram findings and exercise test results.</p>
 
-      errorBox.style.display = 'none';
-      resultBox.classList.remove('show');
+      <div class="grid-2">
+        <!-- Resting ECG -->
+        <div class="field">
+          <label for="RestingECG">Resting ECG <span class="req">*</span></label>
+          <select id="RestingECG" onchange="markSelectValid(this)">
+            <option value="">— Select ECG result —</option>
+            <option value="Normal">Normal — No ECG abnormalities</option>
+            <option value="ST">ST — ST-T wave abnormality</option>
+            <option value="LVH">LVH — Left ventricular hypertrophy</option>
+          </select>
+          <div class="field-error" id="err-RestingECG"></div>
+        </div>
 
-      const body = {};
+        <!-- ST Slope -->
+        <div class="field">
+          <label for="ST_Slope">ST Slope <span class="req">*</span></label>
+          <select id="ST_Slope" onchange="markSelectValid(this)">
+            <option value="">— Select ST slope —</option>
+            <option value="Up">Up — Upsloping (favorable)</option>
+            <option value="Flat">Flat — Flat (neutral)</option>
+            <option value="Down">Down — Downsloping (concerning)</option>
+          </select>
+          <div class="field-error" id="err-ST_Slope"></div>
+        </div>
 
-      // Numeric fields
-      for (const f of ['Age','RestingBP','Cholesterol','MaxHR','Oldpeak']) {
-        const val = document.getElementById(f).value.trim();
-        if (!val) { showError('Please fill in ' + f); return; }
-        body[f] = parseFloat(val);
-      }
+        <!-- Exercise Angina -->
+        <div class="field full">
+          <label>Exercise-Induced Angina <span class="req">*</span></label>
+          <div class="option-group">
+            <div class="option-card selected" id="oc-N" onclick="selectOption('ExerciseAngina','N',this)">
+              <span class="oc-icon">🏃</span>
+              <span class="oc-label">No Angina</span>
+            </div>
+            <div class="option-card" id="oc-Y" onclick="selectOption('ExerciseAngina','Y',this)">
+              <span class="oc-icon">😮‍💨</span>
+              <span class="oc-label">Angina Present</span>
+            </div>
+          </div>
+          <input type="hidden" id="ExerciseAngina" value="N"/>
+        </div>
+      </div>
 
-      // Categorical fields (all encoded to float on the server)
-      for (const f of ['Sex','ChestPainType','FastingBS','RestingECG','ExerciseAngina','ST_Slope']) {
-        body[f] = document.getElementById(f).value;
-      }
+      <div class="nav-row">
+        <button class="btn-back" onclick="prevStep(2)">← Back</button>
+        <button class="btn-submit" id="submitBtn" onclick="submitPrediction()">
+          🔬 Analyze Risk
+        </button>
+      </div>
+    </div>
 
-      btn.disabled = true;
-      btn.textContent = 'Analyzing…';
+    <!-- PANEL RESULT -->
+    <div class="panel" id="panel-result">
+      <div class="result-hero">
+        <div class="result-circle" id="resultCircle"></div>
+        <div class="result-title" id="resultTitle"></div>
+        <p class="result-desc" id="resultDesc"></p>
+      </div>
 
-      try {
-        const res  = await fetch('/predict', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Server error');
+      <div class="conf-box" id="confBox" style="display:none">
+        <div class="conf-label">
+          <span>Model Confidence</span>
+          <span class="conf-value" id="confValue"></span>
+        </div>
+        <div class="conf-track">
+          <div class="conf-fill" id="confFill"></div>
+        </div>
+      </div>
 
-        const isPositive = data.prediction === 1;
-        resultBox.className = 'result-box show ' + (isPositive ? 'positive' : 'negative');
-        document.getElementById('resultIcon').textContent  = isPositive ? '⚠️' : '✅';
-        document.getElementById('resultTitle').textContent = isPositive
-          ? 'Heart Disease Detected'
-          : 'No Heart Disease Detected';
-        document.getElementById('resultDesc').textContent  = isPositive
-          ? 'The model predicts elevated cardiovascular risk. Please consult a physician.'
-          : 'The model predicts low cardiovascular risk based on the provided data.';
+      <div class="summary-grid" id="summaryGrid"></div>
 
-        const probSec = document.getElementById('probSection');
-        if (data.probability !== null && data.probability !== undefined) {
-          document.getElementById('probValue').textContent = Math.round(data.probability * 100) + '%';
-          probSec.style.display = '';
-        } else {
-          probSec.style.display = 'none';
-        }
-      } catch (err) {
-        showError(err.message);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = 'Run Prediction';
+      <button class="btn-reset" onclick="resetForm()">↩ New Assessment</button>
+      <p class="disclaimer">⚠️ For educational &amp; research purposes only. Not a substitute for professional medical diagnosis.</p>
+    </div>
+
+  </div><!-- /card -->
+</div><!-- /wrapper -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ───────────────────────────────────────────
+     STATE
+  ─────────────────────────────────────────── */
+  let currentStep = 0;
+  const totalSteps = 3;
+
+  /* ───────────────────────────────────────────
+     VALIDATION RULES
+  ─────────────────────────────────────────── */
+  const numRules = {
+    Age:        { min: 18,  max: 100, label: 'Age',               unit: 'yrs'  },
+    RestingBP:  { min: 80,  max: 200, label: 'Resting BP',        unit: 'mmHg' },
+    Cholesterol:{ min: 100, max: 600, label: 'Cholesterol',       unit: 'mg/dL'},
+    MaxHR:      { min: 60,  max: 220, label: 'Max Heart Rate',    unit: 'bpm'  },
+    Oldpeak:    { min: -3,  max: 7,   label: 'ST Depression',     unit: ''     },
+  };
+
+  const stepFields = {
+    0: { nums: ['Age'], selects: ['ChestPainType'], hidden: ['Sex'] },
+    1: { nums: ['RestingBP','Cholesterol','MaxHR','Oldpeak'], selects: ['FastingBS'], hidden: [] },
+    2: { nums: [], selects: ['RestingECG','ST_Slope'], hidden: ['ExerciseAngina'] },
+  };
+
+  /* ───────────────────────────────────────────
+     OPTION CARDS
+  ─────────────────────────────────────────── */
+  function selectOption(fieldId, value, el) {
+    document.getElementById(fieldId).value = value;
+    // deselect siblings
+    el.parentElement.querySelectorAll('.option-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  /* ───────────────────────────────────────────
+     NUMERIC VALIDATION + RANGE BAR
+  ─────────────────────────────────────────── */
+  function validateNum(input, id, min, max, force = false) {
+    const val   = input.value.trim();
+    const errEl = document.getElementById('err-' + id);
+    const wrap  = document.getElementById('wrap-' + id);
+    const viEl  = document.getElementById('vi-' + id);
+    const rbEl  = document.getElementById('rb-' + id);
+
+    if (val === '') {
+      clearFieldState(input, wrap, viEl, errEl);
+      if (rbEl) rbEl.style.width = '0%';
+      return false;
+    }
+
+    const num = parseFloat(val);
+    // range bar fill
+    if (rbEl) {
+      const pct = Math.min(100, Math.max(0, ((num - min) / (max - min)) * 100));
+      rbEl.style.width = pct + '%';
+      rbEl.style.background = pct < 20 || pct > 90
+        ? 'var(--accent)'
+        : pct > 50 ? '#e8a500' : 'var(--safe)';
+    }
+
+    if (isNaN(num)) {
+      setError(input, wrap, viEl, errEl, 'Please enter a valid number');
+      return false;
+    }
+    if (num < min || num > max) {
+      const r = numRules[id];
+      setError(input, wrap, viEl, errEl, `${r.label} must be between ${min}–${max} ${r.unit}`);
+      return false;
+    }
+
+    setValid(input, wrap, viEl, errEl);
+    return true;
+  }
+
+  function setError(input, wrap, vi, err, msg) {
+    input.className = 'invalid';
+    wrap.className  = 'input-wrap';
+    vi.textContent  = '';
+    err.textContent = '⚠ ' + msg;
+    err.classList.add('show');
+  }
+
+  function setValid(input, wrap, vi, err) {
+    input.className = 'valid';
+    wrap.className  = 'input-wrap valid';
+    vi.textContent  = '✓';
+    err.classList.remove('show');
+  }
+
+  function clearFieldState(input, wrap, vi, err) {
+    input.className = '';
+    wrap.className  = 'input-wrap';
+    vi.textContent  = '';
+    err.classList.remove('show');
+  }
+
+  function markSelectValid(sel) {
+    const err = document.getElementById('err-' + sel.id);
+    if (sel.value && err) err.classList.remove('show');
+  }
+
+  /* ───────────────────────────────────────────
+     STEP NAVIGATION
+  ─────────────────────────────────────────── */
+  function goToStep(n) {
+    if (n > currentStep) return; // can't skip forward
+    showPanel(n, n < currentStep ? 'back' : 'forward');
+  }
+
+  function nextStep(current) {
+    if (!validateStep(current)) return;
+    showPanel(current + 1, 'forward');
+  }
+
+  function prevStep(current) {
+    showPanel(current - 1, 'back');
+  }
+
+  function showPanel(n, dir) {
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p => p.classList.remove('active','panel-back'));
+
+    const target = document.getElementById('panel-' + n);
+    if (!target) return;
+    target.classList.add('active');
+    if (dir === 'back') target.classList.add('panel-back');
+
+    currentStep = n;
+    updateStepNav(n);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function updateStepNav(n) {
+    for (let i = 0; i < totalSteps; i++) {
+      const ind  = document.getElementById('step-ind-' + i);
+      const dot  = document.getElementById('sd-' + i);
+      const line = document.getElementById('sl-' + i);
+
+      ind.className = 'step';
+      if (i < n)       { ind.classList.add('done');   dot.textContent = '✓'; }
+      else if (i === n){ ind.classList.add('active');  dot.textContent = i+1; }
+      else             {                               dot.textContent = i+1; }
+
+      if (line) line.className = 'step-line' + (i < n ? ' done' : '');
+    }
+    // result step
+    const rs = document.getElementById('step-ind-3');
+    if (n === 'result') rs.classList.add('done');
+  }
+
+  /* ───────────────────────────────────────────
+     STEP VALIDATION
+  ─────────────────────────────────────────── */
+  function validateStep(step) {
+    const rules = stepFields[step];
+    let ok = true;
+
+    // numeric fields
+    for (const id of rules.nums) {
+      const el = document.getElementById(id);
+      const r  = numRules[id];
+      const valid = validateNum(el, id, r.min, r.max, true);
+      if (!valid) ok = false;
+    }
+
+    // select fields
+    for (const id of rules.selects) {
+      const el  = document.getElementById(id);
+      const err = document.getElementById('err-' + id);
+      if (!el.value) {
+        if (err) { err.textContent = '⚠ Please make a selection'; err.classList.add('show'); }
+        ok = false;
+      } else {
+        if (err) err.classList.remove('show');
       }
     }
 
-    function showError(msg) {
-      const eb = document.getElementById('errorBox');
-      eb.textContent = '❌ ' + msg;
-      eb.style.display = 'block';
+    if (!ok) {
+      showToast('Please fill in all required fields correctly.');
     }
-  </script>
+    return ok;
+  }
+
+  /* ───────────────────────────────────────────
+     TOAST
+  ─────────────────────────────────────────── */
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = '⚠ ' + msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+  }
+
+  /* ───────────────────────────────────────────
+     SUBMIT
+  ─────────────────────────────────────────── */
+  async function submitPrediction() {
+    if (!validateStep(2)) return;
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Analyzing…';
+
+    const payload = {};
+    for (const id of ['Age','RestingBP','Cholesterol','MaxHR','Oldpeak']) {
+      payload[id] = parseFloat(document.getElementById(id).value);
+    }
+    for (const id of ['Sex','ChestPainType','FastingBS','RestingECG','ExerciseAngina','ST_Slope']) {
+      payload[id] = document.getElementById(id).value;
+    }
+
+    try {
+      const res  = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Server error');
+      showResult(data, payload);
+    } catch (err) {
+      showToast(err.message);
+      btn.disabled = false;
+      btn.innerHTML = '🔬 Analyze Risk';
+    }
+  }
+
+  /* ───────────────────────────────────────────
+     SHOW RESULT
+  ─────────────────────────────────────────── */
+  function showResult(data, payload) {
+    const positive = data.prediction === 1;
+    const panel    = document.getElementById('panel-result');
+
+    // circle
+    const circle = document.getElementById('resultCircle');
+    circle.textContent = positive ? '⚠️' : '✅';
+    circle.className   = 'result-circle ' + (positive ? 'positive' : 'negative');
+
+    // title & desc
+    const title = document.getElementById('resultTitle');
+    const desc  = document.getElementById('resultDesc');
+    title.className   = 'result-title ' + (positive ? 'positive' : 'negative');
+    title.textContent = positive ? 'Elevated Cardiac Risk Detected' : 'Low Cardiac Risk';
+    desc.textContent  = positive
+      ? 'The model identified indicators associated with heart disease. Please consult a cardiologist for a thorough evaluation.'
+      : 'Based on the provided clinical data, the model predicts a low cardiovascular risk profile at this time.';
+
+    // confidence
+    const confBox = document.getElementById('confBox');
+    if (data.probability !== null && data.probability !== undefined) {
+      const pct = Math.round(data.probability * 100);
+      document.getElementById('confValue').textContent = pct + '%';
+      const fill = document.getElementById('confFill');
+      fill.className = 'conf-fill ' + (positive ? 'positive' : 'negative');
+      confBox.style.display = '';
+      setTimeout(() => { fill.style.width = pct + '%'; }, 100);
+    } else {
+      confBox.style.display = 'none';
+    }
+
+    // summary
+    const sg = document.getElementById('summaryGrid');
+    const summaryData = [
+      { key: 'Age',         val: payload.Age + ' yrs' },
+      { key: 'Sex',         val: payload.Sex === 'M' ? '♂ Male' : '♀ Female' },
+      { key: 'Resting BP',  val: payload.RestingBP + ' mmHg' },
+      { key: 'Cholesterol', val: payload.Cholesterol + ' mg/dL' },
+      { key: 'Max HR',      val: payload.MaxHR + ' bpm' },
+      { key: 'ST Depr.',    val: payload.Oldpeak },
+    ];
+    sg.innerHTML = summaryData.map(s =>
+      `<div class="summary-item"><div class="si-val">${s.val}</div><div class="si-key">${s.key}</div></div>`
+    ).join('');
+
+    // show result panel
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    panel.classList.add('active');
+
+    // update step nav
+    for (let i = 0; i < totalSteps; i++) {
+      const ind = document.getElementById('step-ind-' + i);
+      const dot = document.getElementById('sd-' + i);
+      if (ind) { ind.className = 'step done'; dot.textContent = '✓'; }
+      const line = document.getElementById('sl-' + i);
+      if (line) line.className = 'step-line done';
+    }
+    document.getElementById('step-ind-3').classList.add('done');
+    document.getElementById('sd-3').textContent = '✓';
+  }
+
+  /* ───────────────────────────────────────────
+     RESET
+  ─────────────────────────────────────────── */
+  function resetForm() {
+    // reset all inputs
+    ['Age','RestingBP','Cholesterol','MaxHR','Oldpeak'].forEach(id => {
+      const el = document.getElementById(id);
+      el.value = ''; el.className = '';
+      const wrap = document.getElementById('wrap-' + id);
+      if (wrap) wrap.className = 'input-wrap';
+      const vi = document.getElementById('vi-' + id);
+      if (vi) vi.textContent = '';
+      const rb = document.getElementById('rb-' + id);
+      if (rb) rb.style.width = '0%';
+      const err = document.getElementById('err-' + id);
+      if (err) err.classList.remove('show');
+    });
+    ['ChestPainType','FastingBS','RestingECG','ST_Slope'].forEach(id => {
+      document.getElementById(id).value = '';
+      const err = document.getElementById('err-' + id);
+      if (err) err.classList.remove('show');
+    });
+
+    // reset option cards
+    document.getElementById('Sex').value = 'M';
+    document.querySelectorAll('#oc-M, #oc-F').forEach((c,i) => c.classList.toggle('selected', i===0));
+    document.getElementById('ExerciseAngina').value = 'N';
+    document.querySelectorAll('#oc-N, #oc-Y').forEach((c,i) => c.classList.toggle('selected', i===0));
+
+    // go to step 0
+    currentStep = 0;
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panel-0').classList.add('active');
+
+    // reset step nav
+    for (let i = 0; i < totalSteps; i++) {
+      const ind = document.getElementById('step-ind-' + i);
+      const dot = document.getElementById('sd-' + i);
+      const line = document.getElementById('sl-' + i);
+      if (ind) ind.className = 'step' + (i === 0 ? ' active' : '');
+      if (dot) dot.textContent = i + 1;
+      if (line) line.className = 'step-line';
+    }
+    const rs = document.getElementById('step-ind-3');
+    if (rs) rs.className = 'step';
+    document.getElementById('sd-3').textContent = '✓';
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = false;
+    btn.innerHTML = '🔬 Analyze Risk';
+  }
+</script>
 </body>
 </html>
